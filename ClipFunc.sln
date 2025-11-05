@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipFunc", "ClipFunc\ClipFunc.csproj", "{E93E1B7C-CA3E-493F-B4AB-0E70841C3980}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{732671FA-3C5E-44C5-BC8F-6C0D057FE3A9}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E93E1B7C-CA3E-493F-B4AB-0E70841C3980}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E93E1B7C-CA3E-493F-B4AB-0E70841C3980}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E93E1B7C-CA3E-493F-B4AB-0E70841C3980}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E93E1B7C-CA3E-493F-B4AB-0E70841C3980}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

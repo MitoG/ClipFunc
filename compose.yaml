@@ -1,0 +1,13 @@
+﻿services:
+  clipfunc:
+    image: clipfunc
+    build:
+      context: .
+      dockerfile: ClipFunc/Dockerfile
+
+  workerservice1:
+    image: workerservice1
+    build:
+      context: .
+      dockerfile: WorkerService1/Dockerfile
+
