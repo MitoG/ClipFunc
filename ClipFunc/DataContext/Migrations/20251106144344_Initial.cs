@@ -15,7 +15,7 @@ namespace ClipFunc.DataContext.Migrations
                 name: "AccessTokens",
                 columns: table => new
                 {
-                    AccessToken = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    AccessToken = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
                     Expires = table.Column<DateTime>(type: "TEXT", nullable: false),
                     IsExpired = table.Column<bool>(type: "INTEGER", nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -30,10 +30,10 @@ namespace ClipFunc.DataContext.Migrations
                 name: "Games",
                 columns: table => new
                 {
-                    GameId = table.Column<int>(type: "INTEGER", nullable: false),
+                    GameId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
                     Name = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
-                    BoxArtUrl = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
-                    IgdbId = table.Column<int>(type: "INTEGER", nullable: true),
+                    BoxArtUrl = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    IgdbId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedOn = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
@@ -46,9 +46,9 @@ namespace ClipFunc.DataContext.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Username = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    ProfileImageUrl = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    UserId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    ProfileImageUrl = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedOn = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
@@ -61,15 +61,15 @@ namespace ClipFunc.DataContext.Migrations
                 name: "Clips",
                 columns: table => new
                 {
-                    ClipId = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
-                    Title = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
-                    BroadcasterId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatorId = table.Column<int>(type: "INTEGER", nullable: false),
-                    GameId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ViewCount = table.Column<int>(type: "INTEGER", nullable: false),
-                    Url = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
-                    ThumbnailUrl = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    ClipId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    Title = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    BroadcasterId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    CreatorId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    GameId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    Url = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    ThumbnailUrl = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
                     ClipCreationDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    ViewCount = table.Column<int>(type: "INTEGER", nullable: false),
                     Duration = table.Column<double>(type: "REAL", nullable: false),
                     VodOffset = table.Column<int>(type: "INTEGER", nullable: true),
                     CreatedOn = table.Column<DateTime>(type: "TEXT", nullable: false),

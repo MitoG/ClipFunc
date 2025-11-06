@@ -20,7 +20,7 @@ namespace ClipFunc.DataContext.Migrations
             modelBuilder.Entity("ClipFunc.DataContext.Models.AccessTokenModel", b =>
                 {
                     b.Property<string>("AccessToken")
-                        .HasMaxLength(30)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedOn")
@@ -45,11 +45,13 @@ namespace ClipFunc.DataContext.Migrations
             modelBuilder.Entity("ClipFunc.DataContext.Models.ClipModel", b =>
                 {
                     b.Property<string>("ClipId")
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("BroadcasterId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("BroadcasterId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("ClipCreationDate")
                         .HasColumnType("TEXT");
@@ -57,23 +59,27 @@ namespace ClipFunc.DataContext.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("CreatorId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("CreatorId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<double>("Duration")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("GameId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ThumbnailUrl")
                         .IsRequired()
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedOn")
@@ -81,7 +87,7 @@ namespace ClipFunc.DataContext.Migrations
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ViewCount")
@@ -105,19 +111,21 @@ namespace ClipFunc.DataContext.Migrations
 
             modelBuilder.Entity("ClipFunc.DataContext.Models.GameModel", b =>
                 {
-                    b.Property<int>("GameId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("GameId")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("BoxArtUrl")
                         .IsRequired()
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("IgdbId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("IgdbId")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -136,15 +144,16 @@ namespace ClipFunc.DataContext.Migrations
 
             modelBuilder.Entity("ClipFunc.DataContext.Models.UserModel", b =>
                 {
-                    b.Property<int>("UserId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("UserId")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ProfileImageUrl")
                         .IsRequired()
-                        .HasMaxLength(256)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedOn")
@@ -152,7 +161,7 @@ namespace ClipFunc.DataContext.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(64)
+                        .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
                     b.HasKey("UserId");

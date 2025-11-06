@@ -6,7 +6,7 @@ namespace ClipFunc.DataContext.Models;
 
 public class AccessTokenModel : BaseModel
 {
-    [Required, Key, StringLength(30)] public required string AccessToken { get; set; }
+    [Required, Key, StringLength(512)] public required string AccessToken { get; set; }
     [Required] public required DateTime Expires { get; set; }
     public bool IsExpired { get; set; }
 }
@@ -21,7 +21,7 @@ public class AccessTokenModelConfiguration : IEntityTypeConfiguration<AccessToke
 
         builder
             .Property(x => x.AccessToken)
-            .HasMaxLength(30)
+            .HasMaxLength(512)
             .IsRequired();
 
         builder

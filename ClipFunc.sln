@@ -4,7 +4,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClipFunc", "ClipFunc\ClipFu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{732671FA-3C5E-44C5-BC8F-6C0D057FE3A9}"
 	ProjectSection(SolutionItems) = preProject
-		compose.yaml = compose.yaml
+		compose.example.yaml = compose.example.yaml
+		.env = .env
+		.env.example = .env.example
+		README.md = README.md
+		Dockerfile = Dockerfile
+		.dockerignore = .dockerignore
 	EndProjectSection
 EndProject
 Global

@@ -1,12 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ClipFunc.Validation;
 
 namespace ClipFunc.Configuration;
 
-public sealed class TwitchCredentials
+public sealed record TwitchCredentials
 {
-    [Required(AllowEmptyStrings = false), RegularExpression("^[a-z0-9]{30}$")]
-    public required string ClientId { get; set; }
+    public string ClientId { get; set; }
+    public string ClientSecret { get; set; }
 
-    [Required(AllowEmptyStrings = false), RegularExpression("^[a-z0-9]{30}$")]
-    public required string ClientSecret { get; set; }
+    public TwitchCredentials(string? clientId, string? clientSecret)
+    {
+        TwitchCredentialsValidator.ThrowIfInvalid(clientId, clientSecret);
+        ClientId = clientId;
+        ClientSecret = clientSecret;
+    }
 }

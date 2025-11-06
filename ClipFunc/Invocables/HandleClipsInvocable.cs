@@ -8,7 +8,6 @@ using Coravel.Invocable;
 using Discord;
 using Discord.Webhook;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using TwitchLib.Api;
 using TwitchLib.Api.Core;
 using TwitchLib.Api.Helix.Models.Clips.GetClips;
@@ -23,24 +22,22 @@ namespace ClipFunc.Invocables
 
         private readonly IDbContextFactory<ClipFuncContext> _contextFactory;
         private readonly ILogger<HandleClipsInvocable> _logger;
-        private readonly List<ClipFuncChannel> _watchedChannels;
-
+        private readonly ChannelConfiguration _watchedChannel;
         private readonly TwitchAPI _api;
 
         public HandleClipsInvocable(IDbContextFactory<ClipFuncContext> factory,
-            IOptions<ClipFuncOptions> clipFuncOptions,
+            ChannelConfiguration watchedChannel,
+            TwitchCredentials twitchCredentials,
             ILogger<HandleClipsInvocable> logger)
         {
             _contextFactory = factory;
             _logger = logger;
 
-            var options = clipFuncOptions.Value;
-            _watchedChannels = options.WatchedChannels;
-
+            _watchedChannel = watchedChannel;
             var twitchApiSettings = new ApiSettings()
             {
-                ClientId = options.TwitchCredentials.ClientId,
-                Secret = options.TwitchCredentials.ClientSecret
+                ClientId = twitchCredentials.ClientId,
+                Secret = twitchCredentials.ClientSecret
             };
             _api = new TwitchAPI(settings: twitchApiSettings);
         }
@@ -49,44 +46,54 @@ namespace ClipFunc.Invocables
         {
             await UpdateAccessToken();
 
-            foreach (var channel in _watchedChannels)
+            _logger.LogInformation("Starting clip search for broadcaster: `{channel_id}`",
+                _watchedChannel.BroadcasterId);
+            var latestClip = await GetLatestClipByDate();
+
+            var clips = await GetClips(latestClip?.ClipId, latestClip?.ClipCreationDate);
+            if (clips.Count == 0)
             {
-                _logger.LogInformation("Starting clip search for channel: {channel_id}", channel.BroadcasterId);
-                var latestClip = await GetLatestClipByDate(channel.BroadcasterId);
-
-                // If we didn't find any clips in the database it's likely,
-                // that it's the first time we are looking for clips for this broadcaster. 
-                var possibleFirstLoad = latestClip is null;
-
-                var clips = await GetClips(channel.BroadcasterId, latestClip?.ClipId, latestClip?.ClipCreationDate);
-                if (clips.Count == 0)
-                {
-                    _logger.LogInformation("No new clips found for channel `{channel_id}`. Continuing to next channel",
-                        channel.BroadcasterId);
-                    continue;
-                }
-
-                var newClips = await AddNewClips(clips);
-                if (newClips.Count == 0)
-                {
-                    _logger.LogInformation("No new clips found for channel `{channel_id}`. Continuing to next channel",
-                        channel.BroadcasterId);
-                    continue;
-                }
-
-                if (possibleFirstLoad && newClips.Count > 2)
-                {
-                    _logger.LogInformation(
-                        "Skipping webhook since it's likely that this is a first load for channel: {channel_id}",
-                        channel.BroadcasterId);
-                    continue;
-                }
-
-                foreach (var clip in newClips)
-                {
-                    await PostDiscordWebhook(channel, clip.ClipId);
-                }
+                _logger.LogInformation("No new clips found for broadcaster: `{channel_id}`",
+                    _watchedChannel.BroadcasterId);
+                return;
             }
+
+            var newClips = await AddNewClips(clips);
+            if (newClips.Count == 0)
+            {
+                _logger.LogInformation("No new clips found for broadcaster: `{channel_id}`",
+                    _watchedChannel.BroadcasterId);
+            }
+
+            // If we didn't find any clips in the database it's likely,
+            // that it's the first time we are looking for clips for this broadcaster.
+            if (_watchedChannel.PreventWebhookOnFirstLoad && latestClip is null && newClips.Count > 5)
+            {
+                _logger.LogInformation(
+                    "Skipping webhooks since it's likely that this is a first load for broadcaster: {channel_id}",
+                    _watchedChannel.BroadcasterId);
+
+                return;
+            }
+
+            if (newClips.Count > 5)
+            {
+                foreach (var clipChunk in newClips.Chunk(5))
+                {
+                    await PostToDiscord(clipChunk
+                        .Select(x => x.ClipId)
+                        .ToList());
+
+                    // Delay next post by 1 second so we don't hit the rate-limit
+                    await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken);
+                }
+
+                return;
+            }
+
+            await PostToDiscord(newClips
+                .Select(x => x.ClipId)
+                .ToList());
         }
 
         private async Task UpdateAccessToken()
@@ -130,17 +137,16 @@ namespace ClipFunc.Invocables
             _api.Settings.AccessToken = accessToken;
         }
 
-        private async Task<ClipModel?> GetLatestClipByDate(int broadcasterId)
+        private async Task<ClipModel?> GetLatestClipByDate()
         {
             await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
             return await context.Clips
-                .Where(x => x.BroadcasterId == broadcasterId)
+                .Where(x => x.BroadcasterId == _watchedChannel.BroadcasterId)
                 .OrderByDescending(x => x.ClipCreationDate)
                 .FirstOrDefaultAsync(CancellationToken);
         }
 
-        private async Task<List<Clip>> GetClips(int broadcasterId,
-            string? latestClipId = null,
+        private async Task<List<Clip>> GetClips(string? latestClipId = null,
             DateTime? lastClipDate = null,
             string? cursor = null)
         {
@@ -156,7 +162,7 @@ namespace ClipFunc.Invocables
 
             var clipsResponse = await _api.Helix.Clips
                 .GetClipsAsync(
-                    broadcasterId: broadcasterId.ToString(),
+                    broadcasterId: _watchedChannel.BroadcasterId,
                     first: 100,
                     startedAt: startedAt,
                     endedAt: endedAt, // recommendation by twitch to include an end date,
@@ -179,12 +185,9 @@ namespace ClipFunc.Invocables
                 .Max();
 
             // we'll loop recursively while there is a pagination cursor in the response to get all clips
-            var recClips = await GetClips(broadcasterId,
-                lastClipDate: lastClipDate,
-                cursor: clipsResponse.Pagination.Cursor);
+            var recClips = await GetClips(lastClipDate: lastClipDate, cursor: clipsResponse.Pagination.Cursor);
 
             clips.AddRange(recClips);
-
             return clips;
         }
 
@@ -242,32 +245,30 @@ namespace ClipFunc.Invocables
         private async Task<List<ClipModel>> BuildClipModels(List<Clip> clips)
         {
             var gameIds = clips
-                .Select(x => int.Parse(x.GameId))
+                .Select(x => x.GameId)
                 .Distinct()
                 .ToList();
+
             var games = await GetGames(gameIds);
 
             var newClips = new List<ClipModel>();
             foreach (var clip in clips)
             {
-                if (!int.TryParse(clip.BroadcasterId, out var clipBroadcasterId))
+                if (string.IsNullOrWhiteSpace(clip.BroadcasterId))
                 {
-                    _logger.LogError("Unable to parse broadcaster_id: `{broadcaster_id}` to int for clip: `{@clip}`",
-                        clip.BroadcasterId, clip);
+                    _logger.LogError("broadcaster_id was empty for clip: `{@clip}`", clip);
                     continue;
                 }
 
-                if (!int.TryParse(clip.CreatorId, out var clipCreatorId))
+                if (string.IsNullOrWhiteSpace(clip.CreatorId))
                 {
-                    _logger.LogError("Unable to parse creator_id: `{creator_id}` to int for clip: `{@clip}`",
-                        clip.CreatorId, clip);
+                    _logger.LogError("creator_id was empty for clip: `{@clip}`", clip);
                     continue;
                 }
 
-                if (!int.TryParse(clip.GameId, out var clipGameId))
+                if (string.IsNullOrWhiteSpace(clip.GameId))
                 {
-                    _logger.LogError("Unable to parse game_id: `{game_id}` to int for clip: `{@clip}`",
-                        clip.GameId, clip);
+                    _logger.LogError("game_id was empty for clip: `{@clip}`", clip);
                     continue;
                 }
 
@@ -279,16 +280,16 @@ namespace ClipFunc.Invocables
                     continue;
                 }
 
-                var game = games.FirstOrDefault(x => x.GameId == clipGameId);
+                var game = games.FirstOrDefault(x => x.GameId == clip.GameId);
                 if (game is null)
                 {
-                    _logger.LogError("Unable to find game with id: `{game_id}` for clip: `{@clip}`",
-                        clipGameId, clip);
+                    _logger.LogError("Unable to find game with game_id: `{game_id}` for clip: `{@clip}`",
+                        clip.GameId, clip);
                     continue;
                 }
 
-                var broadcaster = await GetUser(clipBroadcasterId);
-                var creator = await GetUser(clipCreatorId);
+                var broadcaster = await GetUser(clip.BroadcasterId);
+                var creator = await GetUser(clip.CreatorId);
 
                 var newClip = new ClipModel
                 {
@@ -310,7 +311,7 @@ namespace ClipFunc.Invocables
             return newClips;
         }
 
-        private async Task<List<GameModel>> GetGames(List<int> gameIds)
+        private async Task<List<GameModel>> GetGames(List<string> gameIds)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
             var knownGames = await context.Games
@@ -325,7 +326,7 @@ namespace ClipFunc.Invocables
             return knownGames.DistinctBy(x => x.GameId).ToList();
         }
 
-        private async Task<UserModel> GetUser(int userId)
+        private async Task<UserModel> GetUser(string userId)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
             var model = await context.Users.FindAsync([userId], CancellationToken);
@@ -333,12 +334,6 @@ namespace ClipFunc.Invocables
                 return model;
 
             var user = await GetTwitchUser(userId);
-
-            if (!int.TryParse(user.Id, out userId))
-            {
-                _logger.LogError("Unable to parse user_id: `{user_id}` to int for user: `{@user}`", user.Id, user);
-                throw new InvalidCastException($"Unable to parse user_id: `{user.Id}`");
-            }
 
             model = new UserModel
             {
@@ -352,7 +347,7 @@ namespace ClipFunc.Invocables
             return model;
         }
 
-        private async Task<List<GameModel>> AddNewGames(List<int> gameIds)
+        private async Task<List<GameModel>> AddNewGames(List<string> gameIds)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
             await using var trans = await context.Database.BeginTransactionAsync(CancellationToken);
@@ -361,29 +356,17 @@ namespace ClipFunc.Invocables
             var newGames = new List<GameModel>();
             foreach (var game in games)
             {
-                if (!int.TryParse(game.Id, out var gameId))
+                if (string.IsNullOrWhiteSpace(game.Id))
                 {
-                    _logger.LogError("Unable to parse game_id: `{game_id}` to int for game: `{@game}`",
-                        game.Id, game);
+                    _logger.LogError("game_id was empty for game: `{@game}`", game);
                     continue;
                 }
 
-                int? igdbId = null;
-                if (!string.IsNullOrWhiteSpace(game.IgdbId))
-                {
-                    if (!int.TryParse(game.IgdbId, out var tempIgdbId))
-                    {
-                        _logger.LogError("Unable to parse igdb_id: `{igdb_id}` to int for game: `{@game}`",
-                            game.IgdbId, game);
-                        continue;
-                    }
-
-                    igdbId = tempIgdbId;
-                }
+                var igdbId = string.IsNullOrWhiteSpace(game.IgdbId) ? null : game.IgdbId;
 
                 newGames.Add(new GameModel
                 {
-                    GameId = gameId,
+                    GameId = game.Id,
                     Name = game.Name,
                     BoxArtUrl = game.BoxArtUrl,
                     IgdbId = igdbId
@@ -406,7 +389,7 @@ namespace ClipFunc.Invocables
             return newGames;
         }
 
-        private async Task<List<Game>> GetClipGames(List<int> gameIds)
+        private async Task<List<Game>> GetClipGames(List<string> gameIds)
         {
             var gamesResponse = await _api.Helix.Games.GetGamesAsync(gameIds.Select(x => x.ToString()).ToList());
             if (gamesResponse?.Data is null || gamesResponse.Data.Length <= 0)
@@ -421,8 +404,6 @@ namespace ClipFunc.Invocables
             return games.ToList();
         }
 
-        private async Task<User> GetTwitchUser(int userId) => await GetTwitchUser(userId.ToString());
-
         private async Task<User> GetTwitchUser(string userId)
         {
             var usersResponse = await _api.Helix.Users.GetUsersAsync([userId]);
@@ -432,16 +413,22 @@ namespace ClipFunc.Invocables
             return usersResponse.Users.First();
         }
 
-        private async Task<ClipModel> GetCompleteClipModel(string clipId)
+        private async Task<List<ClipModel>> GetCompleteClipModels(List<string> clipIds)
         {
             await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
-            var clip = await context.Clips
+            var clips = await context.Clips
+                .AsNoTracking()
                 .Include(x => x.Broadcaster)
                 .Include(x => x.Creator)
                 .Include(x => x.Game)
-                .FirstOrDefaultAsync(x => x.ClipId == clipId, CancellationToken);
+                .Where(x => clipIds.Contains(x.ClipId))
+                .ToListAsync(CancellationToken);
 
-            return clip ?? throw new MissingClipException(clipId);
+            if (clips.Count == clipIds.Count)
+                return clips;
+
+            var missingIds = clipIds.Except(clips.Select(x => x.ClipId)).ToList();
+            throw new MissingClipsException(missingIds);
         }
 
         private static Embed BuildEmbed(ClipModel clip)
@@ -485,19 +472,27 @@ namespace ClipFunc.Invocables
             }.Build();
         }
 
-        private async Task PostDiscordWebhook(ClipFuncChannel channel, string clipId)
+        private async Task PostToDiscord(List<string> clipIds)
         {
-            var clip = await GetCompleteClipModel(clipId);
-            var embed = BuildEmbed(clip);
-            var discord = new DiscordWebhookClient(channel.DiscordWebhookUrl);
+            var clips = await GetCompleteClipModels(clipIds.Distinct().ToList());
+            var embeds = clips.Select(BuildEmbed).ToList();
 
-            _logger.LogInformation("Sending discord message for broadcaster `{broadcaster_name}` and clip `{clip_id}`",
-                clip.Broadcaster!.Username, clip.ClipId);
+            var discord = new DiscordWebhookClient(_watchedChannel.DiscordWebhookUrl);
+
+            _logger.LogInformation(
+                "Sending discord message for broadcasters `{@broadcaster_names}` and clips `{@clip_ids}`",
+                clips.Select(x => x.Broadcaster!.Username).Distinct(),
+                clips.Select(x => x.ClipId).Distinct());
+
+            var profileImageUrl = clips
+                .Where(x => x.BroadcasterId == _watchedChannel.BroadcasterId)
+                .Select(x => x.Broadcaster!.ProfileImageUrl)
+                .FirstOrDefault();
 
             await discord.SendMessageAsync(
-                embeds: [embed],
-                username: channel.DiscordWebhookProfileName,
-                avatarUrl: clip.Broadcaster!.ProfileImageUrl,
+                embeds: embeds,
+                username: _watchedChannel.DiscordWebhookProfileName,
+                avatarUrl: profileImageUrl ?? string.Empty,
                 options: RequestOptions.Default);
         }
     }
