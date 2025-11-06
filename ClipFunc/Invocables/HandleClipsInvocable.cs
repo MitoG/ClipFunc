@@ -496,9 +496,11 @@ namespace ClipFunc.Invocables
 
             try
             {
+                var messageText = GetMessageText(clips.Count);
                 var embeds = clips.Select(BuildEmbed).ToList();
                 var discord = new DiscordWebhookClient(_watchedChannel.DiscordWebhookUrl);
                 await discord.SendMessageAsync(
+                    text: messageText,
                     embeds: embeds,
                     username: _watchedChannel.DiscordWebhookProfileName,
                     avatarUrl: profileImageUrl ?? string.Empty,
@@ -510,6 +512,15 @@ namespace ClipFunc.Invocables
                 _logger.LogWarning("Removing clips which could not be send via webhook");
                 await RemoveClips(clipIds);
             }
+        }
+
+        private static string GetMessageText(int clipCount)
+        {
+            var eyes = string.Concat(Enumerable.Repeat(":eyes:", clipCount));
+            var messageText = clipCount > 1
+                ? $"Neue Clips :interrobang: {eyes}"
+                : "Ein neuer Clip :interrobang: :eyes:";
+            return messageText;
         }
 
         private async Task RemoveClips(List<string> clipIds)
