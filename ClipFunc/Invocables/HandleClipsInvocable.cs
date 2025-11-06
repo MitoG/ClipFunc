@@ -439,7 +439,7 @@ namespace ClipFunc.Invocables
                 .WithUrl($"https://www.twitch.tv/{clip.Creator.Username}");
 
             var embedFooter = new EmbedFooterBuilder()
-                .WithText("Made with ☕, ❤️ and 🤬")
+                .WithText("Made by MitoG with ☕, ❤️ and 🤬")
                 .WithIconUrl(clip.Broadcaster!.ProfileImageUrl);
 
             List<EmbedFieldBuilder> fields =

@@ -6,7 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-ClipFunc-0bec6f76-8feb-4e59-8d59-f7aa6460e5ae</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <Version>0.5.0</Version>
+        <Version>0.5.1</Version>
         <Title>ClipFunc</Title>
         <Authors>MitoG</Authors>
         <Description>A small tool to call a discord webhook when a clip has been created for a linked twitch channel.</Description>
@@ -15,8 +15,8 @@
         <PackageLicenseUrl>https://github.com/MitoG/ClipFunc/blob/main/LICENSE.md</PackageLicenseUrl>
         <RepositoryUrl>https://github.com/MitoG/ClipFunc</RepositoryUrl>
         <RepositoryType>GitHub</RepositoryType>
-        <AssemblyVersion>0.5.0</AssemblyVersion>
-        <FileVersion>0.5.0</FileVersion>
+        <AssemblyVersion>0.5.1</AssemblyVersion>
+        <FileVersion>0.5.1</FileVersion>
         <NeutralLanguage>en-US</NeutralLanguage>
     </PropertyGroup>
 
