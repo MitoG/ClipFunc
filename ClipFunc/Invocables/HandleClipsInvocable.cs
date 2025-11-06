@@ -63,6 +63,8 @@ namespace ClipFunc.Invocables
             {
                 _logger.LogInformation("No new clips found for broadcaster: `{channel_id}`",
                     _watchedChannel.BroadcasterId);
+
+                return;
             }
 
             // If we didn't find any clips in the database it's likely,
@@ -474,10 +476,13 @@ namespace ClipFunc.Invocables
 
         private async Task PostToDiscord(List<string> clipIds)
         {
-            var clips = await GetCompleteClipModels(clipIds.Distinct().ToList());
-            var embeds = clips.Select(BuildEmbed).ToList();
+            if (clipIds.Count == 0)
+                return;
 
-            var discord = new DiscordWebhookClient(_watchedChannel.DiscordWebhookUrl);
+            var clips = await GetCompleteClipModels(clipIds.Distinct().ToList());
+
+            if (clips.Count == 0)
+                return;
 
             _logger.LogInformation(
                 "Sending discord message for broadcasters `{@broadcaster_names}` and clips `{@clip_ids}`",
@@ -489,11 +494,32 @@ namespace ClipFunc.Invocables
                 .Select(x => x.Broadcaster!.ProfileImageUrl)
                 .FirstOrDefault();
 
-            await discord.SendMessageAsync(
-                embeds: embeds,
-                username: _watchedChannel.DiscordWebhookProfileName,
-                avatarUrl: profileImageUrl ?? string.Empty,
-                options: RequestOptions.Default);
+            try
+            {
+                var embeds = clips.Select(BuildEmbed).ToList();
+                var discord = new DiscordWebhookClient(_watchedChannel.DiscordWebhookUrl);
+                await discord.SendMessageAsync(
+                    embeds: embeds,
+                    username: _watchedChannel.DiscordWebhookProfileName,
+                    avatarUrl: profileImageUrl ?? string.Empty,
+                    options: RequestOptions.Default);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Unable to call discord webhook for clips: {@clip_ids}", clipIds);
+                _logger.LogWarning("Removing clips which could not be send via webhook");
+                await RemoveClips(clipIds);
+            }
+        }
+
+        private async Task RemoveClips(List<string> clipIds)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync(CancellationToken);
+            var delta = await context.Clips
+                .Where(x => clipIds.Contains(x.ClipId))
+                .ExecuteDeleteAsync(CancellationToken);
+
+            _logger.LogWarning("Deleted {clip_count} clips for ids: {@clip_ids}", delta, clipIds);
         }
     }
 }
