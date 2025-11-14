@@ -17,7 +17,11 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./ClipFunc.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM base AS final
+FROM base AS final-cop
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ClipFunc.dll"]
+
+FROM final-cop AS final
+ENV DOTNET_ENVIRONMENT="Production"
+WORKDIR /
+ENTRYPOINT ["dotnet", "/app/ClipFunc.dll"]

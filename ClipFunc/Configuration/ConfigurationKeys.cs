@@ -9,4 +9,6 @@ public static class ConfigurationKeys
     public const string DiscordWebhookUrl = "DISCORD_WEBHOOK_URL";
     public const string PreventWebhookOnFirstLoad = "PREVENT_WEBHOOK_ON_FIRST_LOAD";
     public const string SecondsBetweenRuns = "SECONDS_BETWEEN_RUNS";
+    public const string DatabasePath = "DATABASE_PATH";
+    public const string LogLevel = "LOG_LEVEL";
 }

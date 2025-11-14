@@ -20,6 +20,26 @@
         <NeutralLanguage>en-US</NeutralLanguage>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <DisableMicrosoftExtensionsLoggingSourceGenerator>true</DisableMicrosoftExtensionsLoggingSourceGenerator>
+    </PropertyGroup>
+    
+    <!-- This package should replace the Microsoft.Extensions.Logging.Abstractions source generator. -->
+    <Target Name="_Microsoft_Extensions_Logging_AbstractionsRemoveAnalyzers"
+            Condition="'$(DisableMicrosoftExtensionsLoggingSourceGenerator)' == 'true'"
+            AfterTargets="ResolveReferences">
+        <ItemGroup>
+            <_Microsoft_Extensions_Logging_AbstractionsAnalyzer Include="@(Analyzer)"
+                                                                Condition="'%(Analyzer.AssemblyName)' == 'Microsoft.Extensions.Logging.Generators' 
+                Or '%(Analyzer.NuGetPackageId)' == 'Microsoft.Extensions.Logging.Abstractions'" />
+        </ItemGroup>
+
+        <!-- Remove Microsoft.Extensions.Logging.Abstractions Analyzer -->
+        <ItemGroup>
+            <Analyzer Remove="@(_Microsoft_Extensions_Logging_AbstractionsAnalyzer)" />
+        </ItemGroup>
+    </Target>
+    
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <DebugType>embedded</DebugType>
     </PropertyGroup>
@@ -34,6 +54,7 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
+        <PackageReference Include="Serilog.Enrichers.Sensitive" Version="2.1.0" />
         <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
         <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />

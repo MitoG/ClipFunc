@@ -1,24 +1,37 @@
 ﻿# ClipFunc
 
-### **_No Support! Provided "as is"_**
+### **_No Support! Provided "AS IS"_**
 
-This is a small tool to call a discord webhook when a clip has been created for a linked twitch channel.
+A small tool to call a discord webhook when a clip has been created for a linked twitch channel.
 
-## Usage
+![License][license_shield] ![built using dotnet][dotnet_shield]
 
-1. Pull Repository
-2. Run Project
+![discord][discord_shield] ![twitch][twitch_shield] ![coffee][coffee_shield]
 
-Can also be run with docker:
+## Support
+
+This project is provided **_AS IS_**. Do **_NOT_** expect support.
+
+## Configuration
+
+see [.env.example](.env.example)
+
+## Deployment
+
+### docker run
 
 ````bash
 docker build . -t clipfunc:latest
 ````
 
-and
+````bash
+docker volume create clipfunc-db
+````
 
 ````bash
 docker run --rm \
+--name clipfunc \
+-v clipfunc-db:/app/db \
 -e TWITCH_CLIENT_ID=your-twitch-client-id \
 -e TWITCH_CLIENT_SECRET=your-twitch-client-secret \
 -e TWITCH_BROADCASTER_ID=26610234 \
@@ -26,51 +39,25 @@ docker run --rm \
 -e DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/122333444455555666666/ABBCCCDDDDEEEEEFFFFFF \
 -e PREVENT_WEBHOOK_ON_FIRST_LOAD=true \
 -e SECONDS_BETWEEN_RUNS=10 \
+-e DATABASE_PATH=/app/db/clipfunc.db \
+-e LOG_LEVEL=Information \
 clipfunc:latest
 ````
 
-or with docker compose:
+### docker compose
 
-````bash
-docker compose up
-````
+see [example compose file](compose.example.yaml)
 
-## Configuration
+## Links
 
-see `.env.example`
+Originally built for [MalfuncGaming](https://twitch.tv/malfuncgaming)
 
-````dotenv
-#######################
-# TWITCH API SETTINGS #
-#######################
-# Must be exactly 30 alpha-numeric characters in length
-TWITCH_CLIENT_ID=012345678901234567890123456789
+[license_shield]: https://img.shields.io/github/license/MitoG/ClipFunc?style=for-the-badge
 
-# Must be exactly 30 alpha-numeric characters in length
-TWITCH_CLIENT_SECRET=012345678901234567890123456789
+[coffee_shield]: https://img.shields.io/badge/built_with-coffee-brown?style=for-the-badge
 
-# Must be a positive non floating point number
-TWITCH_BROADCASTER_ID=-1000
+[dotnet_shield]: https://img.shields.io/badge/built_with-.NET-512BD4?style=for-the-badge
 
-############################
-# DISCORD WEBHOOK SETTINGS #
-############################
-# The Username used as "Author" of the Webhook Message
-# Can not be empty
-DISCORD_WEBHOOK_PROFILE_NAME=ClipFunc
+[discord_shield]: https://img.shields.io/badge/built_for-discord-5865F2?style=for-the-badge
 
-# The Webhook called when new clips are found
-# Can not be empty and must adhere to the schema
-# https://discord.com/api/webhooks/**/**
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/123456789/abcdefghi
-
-# Prevents mass spam after first search for a channel when clips already exist.
-PREVENT_WEBHOOK_ON_FIRST_LOAD=true
-
-#################
-# MISC SETTINGS #
-#################
-# Seconds between each run.
-# Minium 10 seconds.
-SECONDS_BETWEEN_RUNS=10
-````
+[twitch_shield]: https://img.shields.io/badge/built_for-twitch-9146FF?style=for-the-badge

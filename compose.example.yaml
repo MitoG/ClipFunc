@@ -4,11 +4,17 @@
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - clipfunc-db:/app/db
     environment:
-      TWITCH_CLIENT_ID: your-twitch-client-id
-      TWITCH_CLIENT_SECRET: your-twitch-client-secret
-      TWITCH_BROADCASTER_ID: 26610234
+      TWITCH_CLIENT_ID: 012345678901234567890123456789
+      TWITCH_CLIENT_SECRET: 012345678901234567890123456789
+      TWITCH_BROADCASTER_ID: -1000
       DISCORD_WEBHOOK_PROFILE_NAME: ClipFunc
-      DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/122333444455555666666/ABBCCCDDDDEEEEEFFFFFF
+      DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/123456789/abcdefghi
       PREVENT_WEBHOOK_ON_FIRST_LOAD: true
       SECONDS_BETWEEN_RUNS: 10
+      DATABASE_PATH: /app/db/clipfunc.db
+      LOG_LEVEL: Information
+volumes:
+  clipfunc-db:

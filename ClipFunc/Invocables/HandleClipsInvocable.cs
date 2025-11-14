@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using ClipFunc.Configuration;
 using ClipFunc.DataContext;
@@ -46,7 +46,7 @@ namespace ClipFunc.Invocables
         {
             await UpdateAccessToken();
 
-            _logger.LogInformation("Starting clip search for broadcaster: `{channel_id}`",
+            _logger.LogTrace("Starting clip search for broadcaster: `{channel_id}`",
                 _watchedChannel.BroadcasterId);
             var latestClip = await GetLatestClipByDate();
 
@@ -277,7 +277,7 @@ namespace ClipFunc.Invocables
                 if (!DateTime.TryParseExact(clip.CreatedAt, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeUniversal, out var clipCreationDate))
                 {
-                    _logger.LogError("Unable to parse created_at: `{created_at}` to DateTime for clip: `{@clip}`",
+                    _logger.LogError("Unable to parse created_at: `{created_at}` to DateTime for {@clip}",
                         clip.CreatedAt, clip);
                     continue;
                 }
@@ -285,8 +285,8 @@ namespace ClipFunc.Invocables
                 var game = games.FirstOrDefault(x => x.GameId == clip.GameId);
                 if (game is null)
                 {
-                    _logger.LogError("Unable to find game with game_id: `{game_id}` for clip: `{@clip}`",
-                        clip.GameId, clip);
+                    _logger.LogError("Unable to find game with game_id: `{game_id}` for clip: `{@clip}`", clip.GameId,
+                        clip);
                     continue;
                 }
 
@@ -484,9 +484,7 @@ namespace ClipFunc.Invocables
             if (clips.Count == 0)
                 return;
 
-            _logger.LogInformation(
-                "Sending discord message for broadcasters `{@broadcaster_names}` and clips `{@clip_ids}`",
-                clips.Select(x => x.Broadcaster!.Username).Distinct(),
+            _logger.LogInformation("Sending discord message for clips `{@clip_ids}`",
                 clips.Select(x => x.ClipId).Distinct());
 
             var profileImageUrl = clips
