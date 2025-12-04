@@ -21,7 +21,7 @@ internal class Program
 
         var logger = host.Services.GetRequiredService<ILogger<Program>>();
         var version = typeof(Program).Assembly.GetName().Version ?? new Version(0, 0, 0, 0);
-        logger.LogInformation("Starting up ClipFunc v{version}", version.ToString(3));
+        logger.LogInformation("Starting up ClipFunc v{Version}", version.ToString(3));
 
         var channelConfiguration = host.Services.GetRequiredService<ChannelConfiguration>();
         logger.LogInformation("Using channel configuration: {@channel_configuration}", channelConfiguration);
